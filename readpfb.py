@@ -111,6 +111,40 @@ def readTex(version,f):
             f.read(t_num_levels * SIZEOF_CLIPLEVEL_T)
 
 
+def isGroupClassType(t):
+    return t in [N_GROUP, N_SCS, N_DCS, N_PARTITION, N_SCENE, N_SWITCH, N_LOD, N_SEQUENCE, N_LAYER, N_MORPH, N_ASD, N_FCS, N_DOUBLE_DCS, N_DOUBLE_FCS, N_DOUBLE_SCS ]
+
+
+def readNode(version,f):
+    buf_size = readInt32(f)
+    buf = readInt32Array(f,buf_size)
+    node_type = buf.pop(0)
+    print(f'node {node_names[node_type]}  buf_size={buf_size}')
+    if isGroupClassType(node_type):
+        count = buf.pop(0)
+        if node_type == N_GROUP:
+            children = [buf.pop(0) for i in range(count)]
+            print(f'  {count} children: {children}')
+        else:
+            print('currently unsupported group node type')
+    elif node_type == N_GEODE:
+        count = buf.pop(0)
+        gsets = [buf.pop(0) for i in range(count)]
+        print(f'  {count} gsets: {gsets}')
+    else:
+        print('currently unsupported node type')
+    isect_travmask = buf.pop(0)
+    app_travmask = buf.pop(0)
+    cull_travmask = buf.pop(0)
+    draw_travmask = buf.pop(0)
+    print(f'  travmasks: {isect_travmask} {app_travmask} {cull_travmask} {draw_travmask}')
+    print(f'  remaining data: {buf}')
+    name_size = readInt32(f)
+    if name_size != -1:
+        name = f.read(name_size).decode('ascii')
+        print(f'  name: {name}')
+
+
 f = open(sys.argv[1],'rb')
 
 magicnum = readInt32(f)
@@ -127,14 +161,16 @@ while True:
         listtype = readInt32(f)
         numobjects = readInt32(f)
         numbytes = readInt32(f)
-        print(f'list type {listtype}, {numobjects} objects, {numbytes} bytes')
+        print(f'list type {l_name[listtype]}, {numobjects} objects, {numbytes} bytes')
         if listtype == L_TEX:
             for i in range(numobjects):
                 readTex(version,f)
+        elif listtype == L_NODE:
+            for i in range(numobjects):
+                readNode(version,f)
         else:
             f.read(numbytes)
     except Exception as error:
-        print(repr(error))
         break
 
 f.close()
