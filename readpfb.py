@@ -145,6 +145,52 @@ def readNode(version,f):
         print(f'  name: {name}')
 
 
+class Gset0T:
+    def __init__(self,f):
+        self.ptype = readInt32(f)
+        self.pcount = readInt32(f)
+        self.llist = readInt32(f)
+        self.vlist = readInt32Array(f,3)
+        self.clist = readInt32Array(f,3)
+        self.nlist = readInt32Array(f,3)
+        self.tlist = readInt32Array(f,3)
+        self.draw_mode = readInt32Array(f,3)
+        self.gstate = readInt32Array(f,2)
+        self.line_width = readFloat32(f)
+        self.point_size = readFloat32(f)
+        self.draw_bin = readInt32(f)
+        self.isect_mask = readUInt32(f)
+        self.hlight = readInt32(f)
+        self.bbox_mode = readInt32(f)
+        self.bbox = readFloat32Array(f,6)
+        self.udata = readInt32(f)
+
+def readGset(version,f):
+    if version >= PFBV_MULTITEXTURE:
+        gset = Gset0T(f)
+        readUInt32(f)
+        readInt32(f)
+        readFloat32Array(f,3)
+        readFloat32(f)
+        readInt32(f)
+        readInt32Array(f,3*(19-1)) # guessing that PF_MAX_TEXTURES_19 is 19 - need to find that
+    elif version >= PFBV_GSET_BBOX_FLUX:
+        gset = Gset0T(f)
+        readUInt32(f)
+        readInt32(f)
+        readFloat32Array(f,3)
+        readFloat32(f)
+        readInt32(f)
+    elif version >= PFBV_GSET_DO_DP:
+        gset = Gset0T(f)
+        readUInt32(f)
+        readInt32(f)
+        readFloat32Array(f,3)
+        readFloat32(f)
+    else:
+        gset = Gset0T(f)
+    print(f'Gset: primType {gset.ptype}  numPrims {gset.pcount}  lengthlist {gset.llist}')
+
 f = open(sys.argv[1],'rb')
 
 magicnum = readInt32(f)
@@ -168,6 +214,9 @@ while True:
         elif listtype == L_NODE:
             for i in range(numobjects):
                 readNode(version,f)
+        elif listtype == L_GSET:
+            for i in range(numobjects):
+                readGset(version,f)
         else:
             f.read(numbytes)
     except Exception as error:
