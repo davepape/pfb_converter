@@ -1,22 +1,6 @@
 import sys, struct
+from pfb_constants import *
 
-L_MTL = 0
-L_TEX = 1
-L_TENV = 2
-L_GSTATE = 3
-L_LLIST = 4
-L_VLIST = 5
-L_CLIST = 6
-L_NLIST = 7
-L_TLIST = 8
-L_ILIST = 9
-L_GSET = 10
-L_NODE = 12
-
-PFBV_CLIPTEXTURE = 7
-PFBV_ANISOTROPY = 20
-
-TEXTYPE_TEXTURE = 0
 SIZEOF_CLIPTEX_T = 15*4
 SIZEOF_CLIPLEVEL_T = 7*4
 
@@ -98,7 +82,7 @@ def readTex(version,f):
     if size == -1:
         pass
     else:
-        name = f.read(size)
+        name = f.read(size).decode('ascii')
         print(f'texture name: "{name}"')
     if version >= PFBV_ANISOTROPY:
         # read tex_t (232 bytes)
