@@ -1,35 +1,40 @@
 import sys, struct
 from pfb_constants import *
 
-SIZEOF_CLIPTEX_T = 15*4
-SIZEOF_CLIPLEVEL_T = 7*4
-
-def swap_32(a):
-    return a[::-1]
+ENDIAN_FLAG = '>'
 
 def readInt32(f):
     data = f.read(4)
     if data == "":
         raise Exception("end of file")
-    return struct.unpack('>i', data)[0]
+    return struct.unpack(ENDIAN_FLAG+'i', data)[0]
 
 def readUInt32(f):
     data = f.read(4)
     if data == "":
         raise Exception("end of file")
-    return struct.unpack('>I', data)[0]
+    return struct.unpack(ENDIAN_FLAG+'I', data)[0]
+
+def readUInt16(f):
+    data = f.read(2)
+    if data == "":
+        raise Exception("end of file")
+    return struct.unpack(ENDIAN_FLAG+'H', data)[0]
 
 def readFloat32(f):
     data = f.read(4)
     if data == "":
         raise Exception("end of file")
-    return struct.unpack('>f', data)[0]
+    return struct.unpack(ENDIAN_FLAG+'f', data)[0]
 
 def readInt32Array(f,num):
     return [readInt32(f) for i in range(num)]
 
 def readUInt32Array(f,num):
     return [readUInt32(f) for i in range(num)]
+
+def readUInt16Array(f,num):
+    return [readUInt16(f) for i in range(num)]
 
 def readFloat32Array(f,num):
     return [readFloat32(f) for i in range(num)]
@@ -42,6 +47,16 @@ def readPfVec3(f):
 
 def readPfVec2(f):
     return readFloat32Array(f,2)
+
+def readPfVec4Array(f,num):
+    return [readPfVec4(f) for i in range(num)]
+
+def readPfVec3Array(f,num):
+    return [readPfVec3(f) for i in range(num)]
+
+def readPfVec2Array(f,num):
+    return [readPfVec2(f) for i in range(num)]
+
 
 def readTex0T(f):
     # 224 bytes
@@ -73,6 +88,10 @@ def readTex0T(f):
     readFloat32(f)
     readInt32(f)
     readInt32(f)
+
+
+SIZEOF_CLIPTEX_T = 15*4
+SIZEOF_CLIPLEVEL_T = 7*4
 
 def readTex(version,f):
     size = readInt32(f)
@@ -119,7 +138,7 @@ def readNode(version,f):
     buf_size = readInt32(f)
     buf = readInt32Array(f,buf_size)
     node_type = buf.pop(0)
-    print(f'node {node_names[node_type]}  buf_size={buf_size}')
+    print(f'node {node_names[node_type]}')
     if isGroupClassType(node_type):
         count = buf.pop(0)
         if node_type == N_GROUP:
@@ -137,8 +156,6 @@ def readNode(version,f):
     app_travmask = buf.pop(0)
     cull_travmask = buf.pop(0)
     draw_travmask = buf.pop(0)
-    print(f'  travmasks: {isect_travmask} {app_travmask} {cull_travmask} {draw_travmask}')
-    print(f'  remaining data: {buf}')
     name_size = readInt32(f)
     if name_size != -1:
         name = f.read(name_size).decode('ascii')
@@ -191,10 +208,51 @@ def readGset(version,f):
         gset = Gset0T(f)
     print(f'Gset: primType {gset.ptype}  numPrims {gset.pcount}  lengthlist {gset.llist}')
 
+
+
+def readLlist(version,f):
+    buf = readInt32Array(f,3)
+    size = buf[0]
+    llist = readInt32Array(f,size)
+    return llist
+
+def readVlist(version,f):
+    buf = readInt32Array(f,3)
+    size = buf[0]
+    vlist = readPfVec3Array(f,size)
+    return vlist
+
+def readClist(version,f):
+    buf = readInt32Array(f,3)
+    size = buf[0]
+    clist = readPfVec4Array(f,size)
+    return clist
+
+def readNlist(version,f):
+    buf = readInt32Array(f,3)
+    size = buf[0]
+    nlist = readPfVec3Array(f,size)
+    return nlist
+
+def readTlist(version,f):
+    buf = readInt32Array(f,3)
+    size = buf[0]
+    tlist = readPfVec2Array(f,size)
+    return tlist
+
+def readIlist(version,f):
+    buf = readInt32Array(f,3)
+    size = buf[0]
+    ilist = readUInt16Array(f,size)
+    return ilist
+
+
 f = open(sys.argv[1],'rb')
 
-magicnum = readInt32(f)
+magicnum = readUInt32(f)
 print('magic number = ' + hex(magicnum))
+if magicnum == PFB_MAGIC_NUMBER_LE:
+    ENDIAN_FLAG = '<'
 version = readUInt32(f)
 print(f'version {version}')
 dummy = readInt32(f)
@@ -217,6 +275,24 @@ while True:
         elif listtype == L_GSET:
             for i in range(numobjects):
                 readGset(version,f)
+        elif listtype == L_LLIST:
+            for i in range(numobjects):
+                readLlist(version,f)
+        elif listtype == L_VLIST:
+            for i in range(numobjects):
+                readVlist(version,f)
+        elif listtype == L_CLIST:
+            for i in range(numobjects):
+                readClist(version,f)
+        elif listtype == L_NLIST:
+            for i in range(numobjects):
+                readNlist(version,f)
+        elif listtype == L_TLIST:
+            for i in range(numobjects):
+                readTlist(version,f)
+        elif listtype == L_ILIST:
+            for i in range(numobjects):
+                readIlist(version,f)
         else:
             f.read(numbytes)
     except Exception as error:
