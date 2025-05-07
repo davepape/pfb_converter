@@ -140,12 +140,12 @@ def readNode(version,f):
         if node_type == N_GROUP:
             children = [buf.pop(0) for i in range(count)]
         else:
-            print('currently unsupported group node type')
+            print('#currently unsupported group node type')
     elif node_type == N_GEODE:
         count = buf.pop(0)
         gsets = [buf.pop(0) for i in range(count)]
     else:
-        print('currently unsupported node type')
+        print('#currently unsupported node type')
     isect_travmask = buf.pop(0)
     app_travmask = buf.pop(0)
     cull_travmask = buf.pop(0)
@@ -258,11 +258,11 @@ class modelData:
 f = open(sys.argv[1],'rb')
 
 magicnum = readUInt32(f)
-print('magic number = ' + hex(magicnum))
+print('#magic number = ' + hex(magicnum))
 if magicnum == PFB_MAGIC_NUMBER_LE:
     ENDIAN_FLAG = '<'
 version = readUInt32(f)
-print(f'version {version}')
+print(f'#pfb version {version}')
 dummy = readInt32(f)
 byteoffset = readInt32(f)
 f.seek(byteoffset,0)
@@ -274,7 +274,7 @@ while True:
         listtype = readInt32(f)
         numobjects = readInt32(f)
         numbytes = readInt32(f)
-        print(f'list type {l_name[listtype]}, {numobjects} objects, {numbytes} bytes')
+        print(f'#list type {l_name[listtype]}, {numobjects} objects, {numbytes} bytes')
         if listtype == L_TEX:
             for i in range(numobjects):
                 data.tex.append(readTex(version,f))
@@ -303,9 +303,24 @@ while True:
             for i in range(numobjects):
                 data.ilist.append(readIlist(version,f))
         else:
-            print('  currently unsupported - skipping')
+            print('#  currently unsupported - skipping')
             f.read(numbytes)
     except Exception as error:
         break
 
 f.close()
+
+numverts = 0
+for vl in data.vlist:
+    for v in vl:
+        print(f'v {v[0]} {v[1]} {v[2]}')
+        numverts += 1
+for nl in data.nlist:
+    for n in nl:
+        print(f'vn {n[0]} {n[1]} {n[2]}')
+for tl in data.tlist:
+    for t in tl:
+        print(f'vt {t[0]} {t[1]}')
+
+#for i in range(0,numverts,3):
+#    print(f'f {i}/{i}/{i} {i+1}/{i+1}/{i+1} {i+2}/{i+2}/{i+2}')
