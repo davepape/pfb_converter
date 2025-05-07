@@ -124,6 +124,7 @@ def readTex(version,f):
         f.read(SIZEOF_CLIPTEX_T)
         if t_num_levels > 0:
             f.read(t_num_levels * SIZEOF_CLIPLEVEL_T)
+    return {}
 
 
 def isGroupClassType(t):
@@ -152,6 +153,7 @@ def readNode(version,f):
     name_size = readInt32(f)
     if name_size != -1:
         name = f.read(name_size).decode('ascii')
+    return {}
 
 
 class Gset0T:
@@ -198,6 +200,7 @@ def readGset(version,f):
         readFloat32(f)
     else:
         gset = Gset0T(f)
+    return gset
 
 
 
@@ -238,6 +241,20 @@ def readIlist(version,f):
     return ilist
 
 
+class modelData:
+    def __init__(self):
+        self.node = []
+        self.gset = []
+        self.llist = []
+        self.vlist = []
+        self.clist = []
+        self.nlist = []
+        self.tlist = []
+        self.ilist = []
+        self.tex = []
+
+
+
 f = open(sys.argv[1],'rb')
 
 magicnum = readUInt32(f)
@@ -250,6 +267,8 @@ dummy = readInt32(f)
 byteoffset = readInt32(f)
 f.seek(byteoffset,0)
 
+data = modelData()
+
 while True:
     try:
         listtype = readInt32(f)
@@ -258,31 +277,31 @@ while True:
         print(f'list type {l_name[listtype]}, {numobjects} objects, {numbytes} bytes')
         if listtype == L_TEX:
             for i in range(numobjects):
-                readTex(version,f)
+                data.tex.append(readTex(version,f))
         elif listtype == L_NODE:
             for i in range(numobjects):
-                readNode(version,f)
+                data.node.append(readNode(version,f))
         elif listtype == L_GSET:
             for i in range(numobjects):
-                readGset(version,f)
+                data.gset.append(readGset(version,f))
         elif listtype == L_LLIST:
             for i in range(numobjects):
-                readLlist(version,f)
+                data.llist.append(readLlist(version,f))
         elif listtype == L_VLIST:
             for i in range(numobjects):
-                readVlist(version,f)
+                data.vlist.append(readVlist(version,f))
         elif listtype == L_CLIST:
             for i in range(numobjects):
-                readClist(version,f)
+                data.clist.append(readClist(version,f))
         elif listtype == L_NLIST:
             for i in range(numobjects):
-                readNlist(version,f)
+                data.nlist.append(readNlist(version,f))
         elif listtype == L_TLIST:
             for i in range(numobjects):
-                readTlist(version,f)
+                data.tlist.append(readTlist(version,f))
         elif listtype == L_ILIST:
             for i in range(numobjects):
-                readIlist(version,f)
+                data.ilist.append(readIlist(version,f))
         else:
             print('  currently unsupported - skipping')
             f.read(numbytes)
