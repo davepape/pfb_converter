@@ -102,7 +102,6 @@ def readTex(version,f):
         pass
     else:
         name = f.read(size).decode('ascii')
-        print(f'texture name: "{name}"')
     if version >= PFBV_ANISOTROPY:
         # read tex_t (232 bytes)
         readTex0T(f)
@@ -115,18 +114,15 @@ def readTex(version,f):
     else:
         readTex0T(f)
     if t_list_size > 0:
-        print(f'reading {t_list_size} ints for itlist')
         for i in range(t_list_size):
             readInt32(f)
     if t_type == TEXTYPE_TEXTURE:
         if t_num_levels > 0:
-            print(f'reading {t_num_levels} ints for levels')
             for i in range(t_num_levels):
                 readInt32(f)
     else:
         f.read(SIZEOF_CLIPTEX_T)
         if t_num_levels > 0:
-            print('reading cliplevels')
             f.read(t_num_levels * SIZEOF_CLIPLEVEL_T)
 
 
@@ -138,18 +134,15 @@ def readNode(version,f):
     buf_size = readInt32(f)
     buf = readInt32Array(f,buf_size)
     node_type = buf.pop(0)
-    print(f'node {node_names[node_type]}')
     if isGroupClassType(node_type):
         count = buf.pop(0)
         if node_type == N_GROUP:
             children = [buf.pop(0) for i in range(count)]
-            print(f'  {count} children: {children}')
         else:
             print('currently unsupported group node type')
     elif node_type == N_GEODE:
         count = buf.pop(0)
         gsets = [buf.pop(0) for i in range(count)]
-        print(f'  {count} gsets: {gsets}')
     else:
         print('currently unsupported node type')
     isect_travmask = buf.pop(0)
@@ -159,7 +152,6 @@ def readNode(version,f):
     name_size = readInt32(f)
     if name_size != -1:
         name = f.read(name_size).decode('ascii')
-        print(f'  name: {name}')
 
 
 class Gset0T:
@@ -206,7 +198,6 @@ def readGset(version,f):
         readFloat32(f)
     else:
         gset = Gset0T(f)
-    print(f'Gset: primType {gset.ptype}  numPrims {gset.pcount}  lengthlist {gset.llist}')
 
 
 
@@ -257,7 +248,6 @@ version = readUInt32(f)
 print(f'version {version}')
 dummy = readInt32(f)
 byteoffset = readInt32(f)
-print(f'{byteoffset} byte offset')
 f.seek(byteoffset,0)
 
 while True:
@@ -294,6 +284,7 @@ while True:
             for i in range(numobjects):
                 readIlist(version,f)
         else:
+            print('  currently unsupported - skipping')
             f.read(numbytes)
     except Exception as error:
         break
