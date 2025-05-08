@@ -127,34 +127,39 @@ def isGroupClassType(t):
     return t in [N_GROUP, N_SCS, N_DCS, N_PARTITION, N_SCENE, N_SWITCH, N_LOD, N_SEQUENCE, N_LAYER, N_MORPH, N_ASD, N_FCS, N_DOUBLE_DCS, N_DOUBLE_FCS, N_DOUBLE_SCS ]
 
 
+class Node_data:
+    def __init__(self,node_type):
+        self.type = node_type
+        self.name = ""
+
 def readNode(version,f):
     buf_size = readInt32(f)
     buf = readInt32Array(f,buf_size)
-    node_type = buf.pop(0)
-    if isGroupClassType(node_type):
+    node = Node_data(buf.pop(0))
+    if isGroupClassType(node.type):
         count = buf.pop(0)
-        if node_type == N_GROUP:
-            children = [buf.pop(0) for i in range(count)]
+        if node.type == N_GROUP:
+            node.children = [buf.pop(0) for i in range(count)]
         else:
             print('#currently unsupported group node type')
-    elif node_type == N_GEODE:
+    elif node.type == N_GEODE:
         count = buf.pop(0)
-        gsets = [buf.pop(0) for i in range(count)]
+        node.gsets = [buf.pop(0) for i in range(count)]
     else:
         print('#currently unsupported node type')
-    isect_travmask = buf.pop(0)
-    app_travmask = buf.pop(0)
-    cull_travmask = buf.pop(0)
-    draw_travmask = buf.pop(0)
+    node.isect_travmask = buf.pop(0)
+    node.app_travmask = buf.pop(0)
+    node.cull_travmask = buf.pop(0)
+    node.draw_travmask = buf.pop(0)
     name_size = readInt32(f)
     if name_size != -1:
-        name = f.read(name_size).decode('ascii')
-    return {}
+        node.name = f.read(name_size).decode('ascii')
+    return node
 
 
 class Gset_data:
     def __init__(self,version,f):
-        self.ptype = readInt32(f)
+        self.ptype = gspt_table[readInt32(f)]
         self.pcount = readInt32(f)
         self.llist = readInt32(f)
         self.vlist = readInt32Array(f,3)
@@ -181,14 +186,9 @@ class Gset_data:
         if version >= PFBV_MULTITEXTURE:
             self.multi_tlist = readInt32Array(f,3*(19-1)) # guessing that PF_MAX_TEXTURES_19 is 19 - need to find that
 
-class Gset:
-    def __init__(self,g):
-        self.PrimType = gspt_table[g.ptype]
-        self.NumPrims = g.pcount
 
 def readGset(version,f):
-    gset_data = Gset_data(version,f)
-    gset = Gset(gset_data)
+    gset = Gset_data(version,f)
     return gset
 
 
@@ -299,19 +299,44 @@ while True:
 
 f.close()
 
-sys.exit(1)
-
 numverts = 0
-for vl in data.vlist:
-    for v in vl:
-        print(f'v {v[0]} {v[1]} {v[2]}')
-        numverts += 1
-for nl in data.nlist:
-    for n in nl:
-        print(f'vn {n[0]} {n[1]} {n[2]}')
-for tl in data.tlist:
-    for t in tl:
-        print(f'vt {t[0]} {t[1]}')
 
-#for i in range(0,numverts,3):
-#    print(f'f {i}/{i}/{i} {i+1}/{i+1}/{i+1} {i+2}/{i+2}/{i+2}')
+for n in data.node:
+    if n.type == N_GEODE:
+        for g in n.gsets:
+            gset = data.gset[g]
+            print(f'#gset type {gset.ptype}   numprims {gset.pcount}')
+            if gset.llist != -1:
+                lens = data.llist[gset.llist]
+                print(f'#  lenlist: {lens}')
+            if gset.vlist[1] != -1:
+                coords = data.vlist[gset.vlist[1]]
+            else:
+                continue
+            if gset.vlist[2] != -1:
+                indices = data.ilist[gset.vlist[2]]
+                coords = [coords[i] for i in indices]
+            vstart = numverts
+            for v in coords:
+                print(f'v {v[0]} {v[1]} {v[2]}')
+                numverts += 1
+            if gset.nlist[1] != -1:
+                norms = data.nlist[gset.nlist[1]]
+                if gset.nlist[2] != -1:
+                    indices = data.ilist[gset.nlist[2]]
+                    norms = [norms[i] for i in indices]
+                for n in norms:
+                    print(f'vn {n[0]} {n[1]} {n[2]}')
+            if gset.ptype == PFGS_TRISTRIPS:
+                stripstart = vstart
+                for striplen in lens:
+                    vertindex = stripstart
+                    ccw = True
+                    for tri in range(striplen-2):
+                        if ccw:
+                            print(f'f {vertindex+1}//{vertindex+1} {vertindex+2}//{vertindex+2} {vertindex+3}//{vertindex+3}')
+                        else:
+                            print(f'f {vertindex+1}//{vertindex+1} {vertindex+3}//{vertindex+3} {vertindex+2}//{vertindex+2}')
+                        vertindex += 1
+                        ccw = not ccw
+                    stripstart += striplen
