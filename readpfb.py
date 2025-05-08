@@ -58,36 +58,35 @@ def readPfVec2Array(f,num):
     return [readPfVec2(f) for i in range(num)]
 
 
-def readTex0T(f):
-    # 224 bytes
-    readInt32Array(f,5)
-    readUInt32Array(f,4)
-    readInt32Array(f,3)
-    readPfVec4(f)
-    readInt32(f)
-    readPfVec2(f)
-    readPfVec2(f)
-    readPfVec2(f)
-    readPfVec2(f)
-    readFloat32(f)
-    readPfVec2(f)
-    readPfVec2(f)
-    readPfVec2(f)
-    readPfVec2(f)
-    readFloat32(f)
-    readInt32Array(f,2)
-    readInt32Array(f,3)
-    readInt32Array(f,2)
-    readInt32Array(f,2)
-    readInt32Array(f,2)
-    readInt32(f)
-    readInt32(f)
-    readInt32Array(f,3)
-    readInt32(f)
-    t_list_size = readInt32(f)
-    readFloat32(f)
-    readInt32(f)
-    readInt32(f)
+
+class Tex0T:
+    def __init__(self,f):
+        self.format = readInt32Array(f,5)
+        self.filter = readUInt32Array(f,4)
+        self.wrap = readInt32Array(f,3)
+        self.bcolor = readPfVec4(f)
+        self.btype = readInt32(f)
+        self.ssp = readPfVec2Array(f,4)
+        self.ssc = readFloat32(f)
+        self.dsp = readPfVec2Array(f,4)
+        self.dsc = readFloat32(f)
+        self.tdetail = readInt32Array(f,2)
+        self.lmode = readInt32Array(f,3)
+        self.losource = readInt32Array(f,2)
+        self.lodest = readInt32Array(f,2)
+        self.lsize = readInt32Array(f,2)
+        self.image = readInt32(f)
+        self.comp = readInt32(f)
+        self.xsize = readInt32(f)
+        self.ysize = readInt32(f)
+        self.zsize = readInt32(f)
+        self.load_image = readInt32(f)
+        self.list_size = readInt32(f)
+        self.frame = readFloat32(f)
+        self.num_levels = readInt32(f)
+        self.udata = readInt32(f)
+        self.type = 0
+        self.aniso_degree = 0
 
 
 SIZEOF_CLIPTEX_T = 15*4
@@ -95,35 +94,32 @@ SIZEOF_CLIPLEVEL_T = 7*4
 
 def readTex(version,f):
     size = readInt32(f)
-    t_list_size = 0
-    t_type = 0
-    t_num_levels = 0
     if size == -1:
         pass
     else:
         name = f.read(size).decode('ascii')
     if version >= PFBV_ANISOTROPY:
         # read tex_t (232 bytes)
-        readTex0T(f)
-        t_type = readInt32(f)
+        t = Tex0T(f)
+        t.type = readInt32(f)
         readInt32(f)
     elif version >= PFBV_CLIPTEXTURE:
         # read tex_1_t (228 bytes)
-        readTex0T(f)
-        t_type = readInt32(f)
+        t = Tex0T(f)
+        t.type = readInt32(f)
     else:
-        readTex0T(f)
-    if t_list_size > 0:
-        for i in range(t_list_size):
+        t = Tex0T(f)
+    if t.list_size > 0:
+        for i in range(t.list_size):
             readInt32(f)
-    if t_type == TEXTYPE_TEXTURE:
-        if t_num_levels > 0:
-            for i in range(t_num_levels):
+    if t.type == TEXTYPE_TEXTURE:
+        if t.num_levels > 0:
+            for i in range(t.num_levels):
                 readInt32(f)
     else:
         f.read(SIZEOF_CLIPTEX_T)
-        if t_num_levels > 0:
-            f.read(t_num_levels * SIZEOF_CLIPLEVEL_T)
+        if t.num_levels > 0:
+            f.read(t.num_levels * SIZEOF_CLIPLEVEL_T)
     return {}
 
 
@@ -156,8 +152,8 @@ def readNode(version,f):
     return {}
 
 
-class Gset0T:
-    def __init__(self,f):
+class Gset_data:
+    def __init__(self,version,f):
         self.ptype = readInt32(f)
         self.pcount = readInt32(f)
         self.llist = readInt32(f)
@@ -175,31 +171,24 @@ class Gset0T:
         self.bbox_mode = readInt32(f)
         self.bbox = readFloat32Array(f,6)
         self.udata = readInt32(f)
+        if version >= PFBV_GSET_DO_DP:
+            self.draw_order = readUInt32(f)
+            self.decal_plane = readInt32(f)
+            self.dplane_normal = readFloat32Array(f,3)
+            self.dplane_offset = readFloat32(f)
+        if version >= PFBV_GSET_BBOX_FLUX:
+            self.bbox_flux = readInt32(f)
+        if version >= PFBV_MULTITEXTURE:
+            self.multi_tlist = readInt32Array(f,3*(19-1)) # guessing that PF_MAX_TEXTURES_19 is 19 - need to find that
+
+class Gset:
+    def __init__(self,g):
+        self.PrimType = gspt_table[g.ptype]
+        self.NumPrims = g.pcount
 
 def readGset(version,f):
-    if version >= PFBV_MULTITEXTURE:
-        gset = Gset0T(f)
-        readUInt32(f)
-        readInt32(f)
-        readFloat32Array(f,3)
-        readFloat32(f)
-        readInt32(f)
-        readInt32Array(f,3*(19-1)) # guessing that PF_MAX_TEXTURES_19 is 19 - need to find that
-    elif version >= PFBV_GSET_BBOX_FLUX:
-        gset = Gset0T(f)
-        readUInt32(f)
-        readInt32(f)
-        readFloat32Array(f,3)
-        readFloat32(f)
-        readInt32(f)
-    elif version >= PFBV_GSET_DO_DP:
-        gset = Gset0T(f)
-        readUInt32(f)
-        readInt32(f)
-        readFloat32Array(f,3)
-        readFloat32(f)
-    else:
-        gset = Gset0T(f)
+    gset_data = Gset_data(version,f)
+    gset = Gset(gset_data)
     return gset
 
 
@@ -309,6 +298,8 @@ while True:
         break
 
 f.close()
+
+sys.exit(1)
 
 numverts = 0
 for vl in data.vlist:

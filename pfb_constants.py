@@ -229,3 +229,40 @@ node_names = ["LightPoint",
                    "DoubleSCS",
                    "IBRnode"]
 
+PFGS_OFF = 0
+PFGS_OVERALL = 1
+PFGS_PER_PRIM = 2
+PFGS_PER_VERTEX = 3
+
+PFGS_POINTS = 0
+PFGS_LINES = 1
+PFGS_LINESTRIPS = 2   
+PFGS_TRIS = 3
+PFGS_QUADS = 4
+PFGS_TRISTRIPS = 5
+PFGS_FLAT_LINESTRIPS = 6
+PFGS_FLAT_TRISTRIPS = 7
+PFGS_POLYS = 8
+PFGS_TRIFANS = 9
+PFGS_FLAT_TRIFANS = 10
+PFGS_NUM_PRIMS = 11
+
+gsb_table = [4,
+                PFGS_OFF,
+                PFGS_PER_VERTEX,
+                PFGS_PER_PRIM,
+                PFGS_OVERALL]
+ 
+gspt_table = [11,
+                 PFGS_TRISTRIPS,
+                 PFGS_TRIS,
+                 PFGS_POINTS,
+                 PFGS_LINES,
+                 PFGS_LINESTRIPS,
+                 PFGS_FLAT_LINESTRIPS,
+                 PFGS_QUADS,
+                 PFGS_FLAT_TRISTRIPS,
+                 PFGS_POLYS,
+                 PFGS_TRIFANS,
+                 PFGS_FLAT_TRIFANS]
+
