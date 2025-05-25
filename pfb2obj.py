@@ -398,7 +398,7 @@ for gstate in data.gstate:
         mtl_file.write(f'Ns {mtl.shininess}\n')
     if gstate.texture > -1:
         tex = data.tex[gstate.texture]
-        mtl_file.write(f'Kd_map {tex.filename}\n')
+        mtl_file.write(f'map_Kd {tex.filename}\n')
     mtl_file.write('\n')
     i += 1
 
