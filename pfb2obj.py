@@ -398,7 +398,8 @@ for gstate in data.gstate:
         mtl_file.write(f'Ns {mtl.shininess}\n')
     if gstate.texture > -1:
         tex = data.tex[gstate.texture]
-        mtl_file.write(f'map_Kd {tex.filename}\n')
+        pngfile = tex.filename.replace('.sgi','.png')
+        mtl_file.write(f'map_Kd {pngfile}\n')
     mtl_file.write('\n')
     i += 1
 
@@ -465,6 +466,7 @@ for n in data.node:
                     obj_file.write(f'vt {t[0]} {t[1]}\n')
             if (len(coords) != len(norms)) or (len(coords) != len(texc)):
                 obj_file.write('#ERROR: mismatched number of normals or texture coordinates - only per-vertex is supported !!!!\n')
+                print('#ERROR: mismatched number of normals or texture coordinates - only per-vertex is supported !!!!\n')
 #NOTE: should look up how pfGSetGStateIndex() works (if gstate[1] is not -1); probably none of our models use that feature, however
             if gset.gstate[0] != -1:
                 obj_file.write(f'usemtl gstate{gset.gstate[0]}\n')
